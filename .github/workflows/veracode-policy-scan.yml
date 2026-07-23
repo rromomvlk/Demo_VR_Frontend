@@ -28,7 +28,7 @@ jobs:
 
       # 3) Sube el/los artefacto(s) y ejecuta el Policy Scan.
       - name: Veracode Upload and Scan
-        uses: veracode/veracode-uploadandscan-action@0.2.6
+        uses: veracode/veracode-uploadandscan-action@0.2.9 
         with:
           vid: ${{ secrets.VERACODE_API_ID }}
           vkey: ${{ secrets.VERACODE_API_KEY }}
