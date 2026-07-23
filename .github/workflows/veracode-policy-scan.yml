@@ -1,0 +1,40 @@
+# .github/workflows/veracode-policy-scan.yml
+# Escaneo SAST completo (Veracode Upload and Scan / Policy Scan)
+# al integrar a main. Genera el reporte oficial contra tu política.
+
+name: Veracode Policy Scan (main)
+
+on:
+  push:
+    branches: [ "main" ]
+  # Opcional: también corre cada noche a las 02:00 UTC.
+  schedule:
+    - cron: "0 2 * * *"
+
+jobs:
+  veracode-policy-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      # 1) Empaqueta la app (JS/TS y Python) para el análisis.
+      - name: Empaquetar aplicación (Veracode auto-packager)
+        uses: veracode/veracode-package@v1
+        with:
+          source: "."
+          output: "veracode-artifact"
+
+      # 2) Sube el artefacto y ejecuta el Policy Scan contra tu aplicación.
+      - name: Veracode Upload and Scan
+        uses: veracode/veracode-uploadandscan-action@0.2.6
+        with:
+          vid: ${{ secrets.VERACODE_API_ID }}
+          vkey: ${{ secrets.VERACODE_API_KEY }}
+          # Debe coincidir EXACTO con el nombre de la app en la plataforma Veracode.
+          appname: "${{ github.event.repository.name }}"
+          version: "${{ github.run_id }}-${{ github.sha }}"
+          filepath: "veracode-artifact"
+          createprofile: true
+          # Espera el resultado del scan (minutos). Ponlo en false para no bloquear.
+          scantimeout: 30
