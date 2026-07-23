@@ -11,11 +11,12 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api/client'
 import { setSession } from '../store/auth'
 
 const router = useRouter()
+const route = useRoute()
 const email = ref('')
 const password = ref('')
 const error = ref('')
@@ -31,6 +32,18 @@ async function login() {
   // localStorage, readable by any script (XSS-accessible, no httpOnly cookie).
   setSession(data.user, data.token)
   console.log('[DEBUG] login response:', data) // VULN: sensitive-data-logging — token logged to console
+
+  // VULN: open-redirect (CWE-601) — `redirect` comes straight from the query
+  // string and is used as a full navigation target with no allowlist or
+  // same-origin check. A crafted link like
+  // /login?redirect=https://evil.example/phish sends the freshly
+  // authenticated user straight to an attacker-controlled page.
+  const redirect = route.query.redirect
+  if (redirect) {
+    window.location.href = redirect
+    return
+  }
+
   router.push(data.user.role === 'admin' ? '/admin' : '/pedidos')
 }
 </script>
