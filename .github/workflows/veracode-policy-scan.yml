@@ -29,33 +29,33 @@ jobs:
       # 3) Sube el/los artefacto(s) y ejecuta el Policy Scan.
       - name: Veracode Upload and Scan
         uses: veracode/veracode-uploadandscan-action@0.2.9 
-        run: |
-          mkdir -p ~/.veracode
-          cat > ~/.veracode/veracode.yml <<'YML'
-          profiles:
-            default:
-              api_key_id: ${VERACODE_API_ID}
-              api_key_secret: ${VERACODE_API_KEY}
-          YML
-          # Optional: create .veracodeignore to keep package small
-          cat > .veracodeignore <<'IGNORE'
-          node_modules
-          .git
-          dist
-          build
-          .github
-          IGNORE
-        env:
-          VERACODE_API_ID: ${{ secrets.VERACODE_API_ID }}
-          VERACODE_API_KEY: ${{ secrets.VERACODE_API_KEY }}
-        # with:
-        #   vid: ${{ secrets.VERACODE_API_ID }}
-        #   vkey: ${{ secrets.VERACODE_API_KEY }}
-        #   # Debe coincidir EXACTO con el nombre del perfil en la plataforma.
-        #   appname: "Demo_VR_Frontend"
-        #   version: "${{ github.run_id }}-${{ github.sha }}"
-        #   # Carpeta con los artefactos empaquetados por la CLI.
-        #   filepath: "verascan"
-        #   # El perfil ya lo creaste manualmente, así que no lo recrees.
-        #   createprofile: false
-        #   scantimeout: 30
+        # run: |
+        #   mkdir -p ~/.veracode
+        #   cat > ~/.veracode/veracode.yml <<'YML'
+        #   profiles:
+        #     default:
+        #       api_key_id: ${VERACODE_API_ID}
+        #       api_key_secret: ${VERACODE_API_KEY}
+        #   YML
+        #   # Optional: create .veracodeignore to keep package small
+        #   cat > .veracodeignore <<'IGNORE'
+        #   node_modules
+        #   .git
+        #   dist
+        #   build
+        #   .github
+        #   IGNORE
+        # env:
+        #   VERACODE_API_ID: ${{ secrets.VERACODE_API_ID }}
+        #   VERACODE_API_KEY: ${{ secrets.VERACODE_API_KEY }}
+        with:
+          vid: ${{ secrets.VERACODE_API_ID }}
+          vkey: ${{ secrets.VERACODE_API_KEY }}
+          # Debe coincidir EXACTO con el nombre del perfil en la plataforma.
+          appname: "Demo_VR_Frontend"
+          version: "${{ github.run_id }}-${{ github.sha }}"
+          # Carpeta con los artefactos empaquetados por la CLI.
+          filepath: "verascan"
+          # El perfil ya lo creaste manualmente, así que no lo recrees.
+          createprofile: false
+          scantimeout: 30
