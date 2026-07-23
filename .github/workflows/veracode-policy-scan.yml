@@ -1,6 +1,6 @@
 # .github/workflows/veracode-policy-scan.yml
-# Escaneo SAST completo (Veracode Upload and Scan / Policy Scan)
-# al integrar a main. Genera el reporte oficial contra tu política.
+# Escaneo SAST completo (Veracode Upload and Scan / Policy Scan) al integrar a main.
+# Empaqueta con la Veracode CLI (JS/TS y Python) y sube al perfil de la app.
 
 name: Veracode Policy Scan (main)
 
@@ -18,23 +18,25 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      # 1) Empaqueta la app (JS/TS y Python) para el análisis.
-      - name: Empaquetar aplicación (Veracode auto-packager)
-        uses: veracode/veracode-package@v1
-        with:
-          source: "."
-          output: "veracode-artifact"
+      # 1) Instala la CLI oficial de Veracode.
+      - name: Instalar Veracode CLI
+        run: curl -fsS https://tools.veracode.com/veracode-cli/install | sh
 
-      # 2) Sube el artefacto y ejecuta el Policy Scan contra tu aplicación.
+      # 2) Empaqueta la app (JS/TS y Python) en ./verascan.
+      - name: Empaquetar aplicación (auto-packaging)
+        run: ./veracode package --source . --output verascan --trust
+
+      # 3) Sube el/los artefacto(s) y ejecuta el Policy Scan.
       - name: Veracode Upload and Scan
         uses: veracode/veracode-uploadandscan-action@0.2.6
         with:
           vid: ${{ secrets.VERACODE_API_ID }}
           vkey: ${{ secrets.VERACODE_API_KEY }}
-          # Debe coincidir EXACTO con el nombre de la app en la plataforma Veracode.
-          appname: "${{ github.event.repository.name }}"
+          # Debe coincidir EXACTO con el nombre del perfil en la plataforma.
+          appname: "Demo_VR_Frontend"
           version: "${{ github.run_id }}-${{ github.sha }}"
-          filepath: "veracode-artifact"
-          createprofile: true
-          # Espera el resultado del scan (minutos). Ponlo en false para no bloquear.
+          # Carpeta con los artefactos empaquetados por la CLI.
+          filepath: "verascan"
+          # El perfil ya lo creaste manualmente, así que no lo recrees.
+          createprofile: false
           scantimeout: 30

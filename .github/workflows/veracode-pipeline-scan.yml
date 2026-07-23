@@ -1,6 +1,6 @@
 # .github/workflows/veracode-pipeline-scan.yml
 # Escaneo SAST rápido (Veracode Pipeline Scan) en cada Pull Request.
-# Da feedback inmediato al desarrollador sin frenar el flujo.
+# Empaqueta con la Veracode CLI (soporta JS/TS y Python) y luego escanea.
 
 name: Veracode Pipeline Scan (PR)
 
@@ -8,7 +8,6 @@ on:
   pull_request:
     branches: [ "main" ]
 
-# Cancela ejecuciones anteriores del mismo PR si se hace un nuevo push
 concurrency:
   group: veracode-pipeline-${{ github.ref }}
   cancel-in-progress: true
@@ -20,24 +19,25 @@ jobs:
       - name: Checkout del código
         uses: actions/checkout@v4
 
-      # 1) Empaqueta la app en el artefacto que Veracode espera.
-      #    El auto-packager detecta JS/TS y Python automáticamente.
-      - name: Empaquetar aplicación (Veracode auto-packager)
-        uses: veracode/veracode-package@v1
-        with:
-          source: "."
-          output: "veracode-artifact"
-          # Genera uno o varios archivos dentro de ./veracode-artifact
+      # 1) Instala la CLI oficial de Veracode (incluye el auto-packager).
+      - name: Instalar Veracode CLI
+        run: curl -fsS https://tools.veracode.com/veracode-cli/install | sh
 
-      # 2) Ejecuta el Pipeline Scan sobre el artefacto empaquetado.
+      # 2) Empaqueta la app. El auto-packager detecta JS/TS y Python.
+      #    Deja los artefactos en ./verascan y expone la ruta del .zip.
+      - name: Empaquetar aplicación (auto-packaging)
+        id: package
+        run: |
+          ./veracode package --source . --output verascan --trust
+          echo "artifact=$(ls verascan/*.zip | head -n 1)" >> "$GITHUB_OUTPUT"
+
+      # 3) Ejecuta el Pipeline Scan sobre el artefacto generado.
       - name: Veracode Pipeline Scan
-        uses: veracode/Veracode-pipeline-scan-action@v1.0.16
+        uses: veracode/Veracode-pipeline-scan-action@v1.0.20
         with:
           vid: ${{ secrets.VERACODE_API_ID }}
           vkey: ${{ secrets.VERACODE_API_KEY }}
-          # Ajusta la ruta al archivo generado por el packager si es necesario.
-          file: "veracode-artifact/veracode-auto-pack-${{ github.event.repository.name }}.zip"
-          # Falla el job solo con hallazgos de severidad alta para empezar.
-          # Sube el nivel (p. ej. a "Medium") cuando el equipo esté listo.
+          file: ${{ steps.package.outputs.artifact }}
+          # Falla el build solo con severidad alta para empezar.
           fail_build: true
           fail_on_severity: "Very High, High"
